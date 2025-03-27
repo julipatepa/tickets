@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Lista de Tickets{% endblock %}
+
+{% block content %}
+    <h1>Gestión de Tickets</h1>
+
+    <!-- Formulario para agregar un nuevo ticket -->
+    <form action="{{ url_for('add_ticket') }}" method="POST" class="mt-4">
+        <div class="form-group">
+            <label for="title">Título:</label>
+            <input type="text" id="title" name="title" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="description">Descripción:</label>
+            <textarea id="description" name="description" class="form-control" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Agregar Ticket</button>
+    </form>
+
+    <hr>
+
+    <!-- Lista de tickets -->
+    <h2 class="mt-5">Tickets</h2>
+    <table class="table table-bordered mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th>Fecha de Creación</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+            <tr>
+                <td>{{ ticket.id }}</td>
+                <td>{{ ticket.title }}</td>
+                <td>{{ ticket.description }}</td>
+                <td>{{ ticket.status }}</td>
+                <td>{{ ticket.created_at }}</td>
+                <td>
+                    <a href="{{ url_for('ticket', id=ticket.id) }}" class="btn btn-info btn-sm">Ver</a>
+                    <a href="{{ url_for('delete_ticket', id=ticket.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de que deseas eliminar este ticket?')">Eliminar</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center">No hay tickets disponibles</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+
