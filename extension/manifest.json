@@ -1,0 +1,20 @@
+{
+    "name": "Sistema de Tickets",
+    "version": "1.0",
+    "manifest_version": 3,
+    "description": "Extensión para gestionar tickets",
+    "icons": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    },
+    "action": {
+      "default_popup": "popup.html",
+      "default_icon": {
+        "16": "icon.png",
+        "48": "icon.png",
+        "128": "icon.png"
+      }
+    }
+  }
+  
