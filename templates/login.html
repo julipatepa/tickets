@@ -26,4 +26,7 @@
         <p>¿No tienes cuenta? <a href="{{ url_for('register') }}">Regístrate aquí</a>.</p>
     </div>
 </div>
+<footer class="bg-light text-center text-muted py-3 fixed-bottom">
+    <small>&copy; {{ current_year or "2025" }} Mi Empresa - Todos los derechos reservados</small>
+</footer>
 {% endblock %}
