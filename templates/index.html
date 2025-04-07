@@ -2,78 +2,97 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Tickets</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Panel de Tickets</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-    <div class="container mt-5">
-        <h1>Gestión de Tickets</h1>
-        <hr>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">Tickets</a>
+            <div class="d-flex">
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-light">Cerrar sesión</a>
+            </div>
+        </div>
+    </nav>
 
-        <!-- Mostrar mensaje flash -->
+    <div class="container">
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="alert alert-info">
-                    {% for category, message in messages %}
-                        {{ message }}
-                    {% endfor %}
-                </div>
-            {% endif %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
         {% endwith %}
 
-        <!-- Botón para cerrar sesión -->
-        <a href="{{ url_for('logout') }}" class="btn btn-danger mb-3">Cerrar Sesión</a>
-
-        <!-- Formulario para agregar ticket -->
-        <form action="{{ url_for('add_ticket') }}" method="POST">
-            <div class="mb-3">
-                <label for="title" class="form-label">Título</label>
-                <input type="text" class="form-control" id="title" name="title" required>
+        <div class="card mb-4">
+            <div class="card-header">Agregar nuevo ticket</div>
+            <div class="card-body">
+                <form action="{{ url_for('add_ticket') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Título</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="priority" class="form-label">Prioridad</label>
+                        <select class="form-select" id="priority" name="priority" required>
+                            <option value="Alta">Alta</option>
+                            <option value="Media" selected>Media</option>
+                            <option value="Baja">Baja</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Agregar Ticket</button>
+                </form>
             </div>
-            <div class="mb-3">
-                <label for="description" class="form-label">Descripción</label>
-                <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Agregar Ticket</button>
-        </form>
+        </div>
 
-        <h3 class="mt-4">Lista de Tickets</h3>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th scope="col">Título</th>
-                    <th scope="col">Descripción</th>
-                    <th scope="col">Estado</th>
-                    <th scope="col">Fecha</th>
-                    <th scope="col">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ticket in tickets %}
+        <h3>Lista de Tickets</h3>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark">
                     <tr>
-                        <td>{{ ticket.title }}</td>
-                        <td>{{ ticket.description }}</td>
-                        <td>{{ ticket.status }}</td>
-                        <td>{{ ticket.created_at }}</td>
-                        <td>
-                            {% if ticket.status == 'Pendiente' %}
-                                <form action="{{ url_for('update_status', ticket_id=ticket.id) }}" method="POST">
-                                    <button type="submit" class="btn btn-warning btn-sm">Actualizar a En Proceso</button>
-                                </form>
-                            {% elif ticket.status == 'En proceso' %}
-                                <form action="{{ url_for('mark_resolved', ticket_id=ticket.id) }}" method="POST">
-                                    <button type="submit" class="btn btn-success btn-sm">Marcar como Solucionado</button>
-                                </form>
-                            {% endif %}
-                            <form action="{{ url_for('delete_ticket', ticket_id=ticket.id) }}" method="POST" class="mt-2">
-                                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
-                            </form>
-                        </td>
+                        <th>Título</th>
+                        <th>Descripción</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                        <th>Creado</th>
+                        <th>Acciones</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                        <tr>
+                            <td>{{ ticket.title }}</td>
+                            <td>{{ ticket.description }}</td>
+                            <td>{{ ticket.priority }}</td>
+                            <td>{{ ticket.status }}</td>
+                            <td>{{ ticket.created_at }}</td>
+                            <td>
+                                {% if ticket.status != 'Solucionado' %}
+                                    <form action="{{ url_for('update_status', ticket_id=ticket.id) }}" method="POST" style="display:inline;">
+                                        <button class="btn btn-warning btn-sm">En proceso</button>
+                                    </form>
+                                    <form action="{{ url_for('mark_resolved', ticket_id=ticket.id) }}" method="POST" style="display:inline;">
+                                        <button class="btn btn-success btn-sm">Solucionado</button>
+                                    </form>
+                                {% endif %}
+                                <form action="{{ url_for('delete_ticket', ticket_id=ticket.id) }}" method="POST" style="display:inline;">
+                                    <button class="btn btn-danger btn-sm">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
