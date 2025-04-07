@@ -3,25 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Panel de Tickets</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- mejora responsive -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            padding-bottom: 100px; /* espacio para el footer */
-        }
-        footer {
-            background-color: #f8f9fa;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            height: 60px;
-            line-height: 60px;
-        }
-    </style>
 </head>
 <body class="bg-light">
-
-    <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container">
             <a class="navbar-brand" href="#">Tickets</a>
@@ -31,9 +15,7 @@
         </div>
     </nav>
 
-    <!-- CONTENIDO -->
     <div class="container">
-        <!-- FLASH MESSAGES -->
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -45,9 +27,8 @@
           {% endif %}
         {% endwith %}
 
-        <!-- FORMULARIO -->
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-primary text-white">Agregar nuevo ticket</div>
+        <div class="card mb-4">
+            <div class="card-header">Agregar nuevo ticket</div>
             <div class="card-body">
                 <form action="{{ url_for('add_ticket') }}" method="POST">
                     <div class="mb-3">
@@ -71,11 +52,10 @@
             </div>
         </div>
 
-        <!-- TABLA DE TICKETS -->
-        <h3 class="mb-3">Lista de Tickets</h3>
-        <div class="table-responsive mb-5">
+        <h3>Lista de Tickets</h3>
+        <div class="table-responsive">
             <table class="table table-bordered table-striped">
-                <thead class="table-dark text-center">
+                <thead class="table-dark">
                     <tr>
                         <th>Título</th>
                         <th>Descripción</th>
@@ -93,7 +73,7 @@
                             <td>{{ ticket.priority }}</td>
                             <td>{{ ticket.status }}</td>
                             <td>{{ ticket.created_at }}</td>
-                            <td class="text-center">
+                            <td>
                                 {% if ticket.status != 'Solucionado' %}
                                     <form action="{{ url_for('update_status', ticket_id=ticket.id) }}" method="POST" style="display:inline;">
                                         <button class="btn btn-warning btn-sm">En proceso</button>
@@ -112,13 +92,9 @@
             </table>
         </div>
     </div>
-
-    <!-- FOOTER -->
-    <footer class="text-center text-muted">
+    <footer class="bg-light text-center text-muted py-3 fixed-bottom">
         <small>&copy; {{ current_year or "2025" }} Mi Empresa - Todos los derechos reservados</small>
     </footer>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
