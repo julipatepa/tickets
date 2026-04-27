@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Clientes PRO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Clientes PRO · Rowa</title>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -12,280 +12,770 @@
 <!-- Excel -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
-<!-- Gráficos -->
+<!-- Chart -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Bootstrap -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 
 <style>
-body { background:#111; color:white; }
+/* ── RESET & BASE ─────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-input, select {
-  background:#222 !important;
-  color:white !important;
-  border:1px solid #555 !important;
+:root {
+  --bg:       #0d0d0d;
+  --surface:  #181818;
+  --surface2: #222;
+  --border:   #2e2e2e;
+  --text:     #f0f0f0;
+  --muted:    #888;
+  --accent:   #3b82f6;
+  --green:    #22c55e;
+  --orange:   #f97316;
+  --red:      #ef4444;
+
+  --estado-reparado: #22c55e;
+  --estado-visita:   #3b82f6;
+  --estado-pendiente:#f97316;
+
+  --radius: 14px;
+  --font: 'DM Sans', sans-serif;
 }
 
-input::placeholder { color:#aaa !important; }
-
-.card {
-  background:#1e1e1e;
-  color:white;
-  border:none;
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
 }
+
+/* ── UTILIDADES ───────────────────────────────── */
+.hidden { display: none !important; }
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 12px 16px;
+  transition: opacity .15s, transform .1s;
+  width: 100%;
+}
+.btn:active { opacity: .75; transform: scale(.97); }
+
+.btn-primary  { background: var(--accent); color: #fff; }
+.btn-success  { background: var(--green);  color: #fff; }
+.btn-danger   { background: var(--red);    color: #fff; }
+.btn-outline  { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-sm       { padding: 8px 12px; font-size: 13px; width: auto; }
+
+.input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  padding: 12px 14px;
+  transition: border-color .2s;
+  -webkit-appearance: none;
+}
+.input:focus { outline: none; border-color: var(--accent); }
+.input::placeholder { color: var(--muted); }
+
+/* ── LOGIN ────────────────────────────────────── */
+#screen-login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 32px 24px;
+}
+
+.login-logo {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.login-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 32px;
+  color: var(--text);
+}
+
+.login-form {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#login-error {
+  font-size: 13px;
+  color: var(--red);
+  text-align: center;
+  min-height: 18px;
+}
+
+/* ── APP LAYOUT ───────────────────────────────── */
+#screen-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+
+.app-header-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.app-header-user {
+  font-size: 12px;
+  color: var(--muted);
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Content */
+.app-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+/* ── STATS BAR ────────────────────────────────── */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.stat-pill {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.stat-pill .stat-num {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-pill .stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.stat-pill.green .stat-num { color: var(--estado-reparado); }
+.stat-pill.blue  .stat-num { color: var(--estado-visita);   }
+.stat-pill.orange .stat-num{ color: var(--estado-pendiente);}
+
+/* ── CHART ────────────────────────────────────── */
+.chart-wrap {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px;
+  border: 1px solid var(--border);
+}
+
+.section-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+/* ── FORMULARIO ───────────────────────────────── */
+.form-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-card.editing {
+  border-color: var(--accent);
+}
+
+.form-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.estado-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.estado-btn {
+  padding: 9px 4px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+}
+
+.estado-btn[data-estado="Reparado"].active { border-color: var(--estado-reparado); color: var(--estado-reparado); background: #22c55e14; }
+.estado-btn[data-estado="Visita"].active   { border-color: var(--estado-visita);   color: var(--estado-visita);   background: #3b82f614; }
+.estado-btn[data-estado="Pendiente"].active{ border-color: var(--estado-pendiente);color: var(--estado-pendiente);background: #f9731614; }
+
+.form-actions { display: flex; gap: 8px; }
+.form-actions .btn { flex: 1; }
+
+/* ── FILTROS ──────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.filter-bar::-webkit-scrollbar { display: none; }
+
+.filter-chip {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+.filter-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ── LISTA ────────────────────────────────────── */
+.lista-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cliente-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeUp .25s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.card-nombre { font-size: 16px; font-weight: 700; }
+
+.estado-badge {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.estado-badge.Reparado { background: #22c55e20; color: var(--estado-reparado); }
+.estado-badge.Visita   { background: #3b82f620; color: var(--estado-visita);   }
+.estado-badge.Pendiente{ background: #f9731620; color: var(--estado-pendiente);}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.card-row a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.card-row .icon { font-size: 14px; flex-shrink: 0; }
+
+.card-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── EXCEL BTN ────────────────────────────────── */
+.excel-btn {
+  background: #16a34a;
+  color: #fff;
+}
+
+/* ── EMPTY STATE ──────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.empty-state .icon { font-size: 36px; margin-bottom: 8px; }
+
 </style>
 </head>
+<body>
 
-<body class="p-2">
+<!-- ══ LOGIN ══════════════════════════════════════ -->
+<div id="screen-login">
+  <p class="login-logo">Rowa Bombas</p>
+  <h1 class="login-title">Ingresá a tu cuenta</h1>
 
-<!-- LOGIN -->
-<div id="login">
-<h3 class="text-center">Ingreso</h3>
-
-<input id="email" class="form-control mb-2" placeholder="Email">
-<input id="pass" type="password" class="form-control mb-2" placeholder="Contraseña">
-
-<button onclick="loginUser()" class="btn btn-primary w-100 mb-2">Entrar</button>
-<p id="error" class="text-danger text-center"></p>
+  <div class="login-form">
+    <input id="login-email" class="input" type="email" placeholder="Email" autocomplete="email">
+    <input id="login-pass"  class="input" type="password" placeholder="Contraseña" autocomplete="current-password">
+    <button class="btn btn-primary" onclick="Auth.login()">Entrar</button>
+    <p id="login-error"></p>
+  </div>
 </div>
 
-<!-- APP -->
-<div id="app" style="display:none">
+<!-- ══ APP ════════════════════════════════════════ -->
+<div id="screen-app" class="hidden">
 
-<h3 class="text-center">Clientes</h3>
+  <!-- Header -->
+  <header class="app-header">
+    <div>
+      <div class="app-header-title">Clientes PRO</div>
+      <div class="app-header-user" id="header-user"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="exportarExcel()">📊 Excel</button>
+      <button class="btn btn-outline btn-sm" onclick="Auth.logout()">Salir</button>
+    </div>
+  </header>
 
-<button onclick="logout()" class="btn btn-warning mb-2">Cerrar sesión</button>
+  <div class="app-body">
 
-<button onclick="exportarExcel()" class="btn btn-success w-100 mb-2">
-📊 Descargar Excel
-</button>
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-pill green">
+        <div class="stat-num" id="stat-reparado">0</div>
+        <div class="stat-label">Reparados</div>
+      </div>
+      <div class="stat-pill blue">
+        <div class="stat-num" id="stat-visita">0</div>
+        <div class="stat-label">Visitas</div>
+      </div>
+      <div class="stat-pill orange">
+        <div class="stat-num" id="stat-pendiente">0</div>
+        <div class="stat-label">Pendientes</div>
+      </div>
+    </div>
 
-<select id="filtro" class="form-control mb-2" onchange="cargarDatos()">
-<option value="">Todos</option>
-<option>Reparado</option>
-<option>Visita</option>
-<option>Pendiente</option>
-</select>
+    <!-- Chart -->
+    <div class="chart-wrap">
+      <div class="section-label">Resumen</div>
+      <canvas id="grafico" height="120"></canvas>
+    </div>
 
-<canvas id="grafico" style="margin-bottom:20px;"></canvas>
+    <!-- Formulario -->
+    <div class="form-card" id="form-card">
+      <div class="form-title" id="form-title">Nuevo cliente</div>
 
-<input id="nombre" class="form-control mb-1" placeholder="Nombre">
-<input id="telefono" class="form-control mb-1" placeholder="Teléfono">
-<input id="direccion" class="form-control mb-1" placeholder="Dirección">
-<input id="fecha" type="date" class="form-control mb-1">
+      <input id="f-nombre"    class="input" placeholder="Nombre completo">
+      <input id="f-telefono"  class="input" type="tel" placeholder="Teléfono (sin +54)">
+      <input id="f-direccion" class="input" placeholder="Dirección">
+      <input id="f-fecha"     class="input" type="date">
 
-<select id="estado" class="form-control mb-2">
-<option>Reparado</option>
-<option>Visita</option>
-<option>Pendiente</option>
-</select>
+      <!-- Estado selector -->
+      <div class="estado-selector">
+        <button class="estado-btn active" data-estado="Reparado" onclick="UI.setEstado('Reparado')">✅ Reparado</button>
+        <button class="estado-btn"       data-estado="Visita"    onclick="UI.setEstado('Visita')">👁 Visita</button>
+        <button class="estado-btn"       data-estado="Pendiente" onclick="UI.setEstado('Pendiente')">⏳ Pendiente</button>
+      </div>
 
-<button onclick="guardar()" class="btn btn-success w-100 mb-3">Guardar</button>
+      <div class="form-actions">
+        <button class="btn btn-success" onclick="Clientes.guardar()">Guardar</button>
+        <button class="btn btn-outline hidden" id="btn-cancelar" onclick="UI.cancelarEdicion()">Cancelar</button>
+      </div>
+    </div>
 
-<div id="lista"></div>
+    <!-- Filtros -->
+    <div class="filter-bar">
+      <button class="filter-chip active" data-filtro="" onclick="UI.setFiltro(this)">Todos</button>
+      <button class="filter-chip" data-filtro="Reparado" onclick="UI.setFiltro(this)">✅ Reparados</button>
+      <button class="filter-chip" data-filtro="Visita"   onclick="UI.setFiltro(this)">👁 Visitas</button>
+      <button class="filter-chip" data-filtro="Pendiente" onclick="UI.setFiltro(this)">⏳ Pendientes</button>
+    </div>
 
-</div>
+    <!-- Lista -->
+    <div class="section-label" id="lista-count">0 clientes</div>
+    <div class="lista-wrap" id="lista"></div>
+
+  </div><!-- /app-body -->
+</div><!-- /screen-app -->
 
 <script>
-
-// CONFIG FIREBASE
-const firebaseConfig = {
-  apiKey: "AIzaSyCAPcfPI7Xem6Ua6uasDws7rfAGn-yUyAs",
-  authDomain: "ticketsrowa.firebaseapp.com",
-  projectId: "ticketsrowa",
-  storageBucket: "ticketsrowa.appspot.com",
+/* ══════════════════════════════════════════════
+   CONFIGURACIÓN
+══════════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCAPcfPI7Xem6Ua6uasDws7rfAGn-yUyAs",
+  authDomain:        "ticketsrowa.firebaseapp.com",
+  projectId:         "ticketsrowa",
+  storageBucket:     "ticketsrowa.appspot.com",
   messagingSenderId: "373395832563",
-  appId: "1:373395832563:web:0d8cf5099d4e32296e8186"
+  appId:             "1:373395832563:web:0d8cf5099d4e32296e8186"
 };
 
-firebase.initializeApp(firebaseConfig);
+const ADMIN_EMAIL  = "julipatepa@gmail.com";
+const COLECCION    = "clientes";
+const ESTADOS      = ["Reparado", "Visita", "Pendiente"];
 
-const db = firebase.firestore();
+/* ══════════════════════════════════════════════
+   FIREBASE INIT
+══════════════════════════════════════════════ */
+firebase.initializeApp(FIREBASE_CONFIG);
+
+const db   = firebase.firestore();
 const auth = firebase.auth();
 
-let editId = null;
-
-// LOGIN
-function loginUser(){
-auth.signInWithEmailAndPassword(
-document.getElementById("email").value,
-document.getElementById("pass").value
-).catch(e => error.innerText=e.message);
-}
-
-// LOGOUT
-function logout(){
-auth.signOut();
-}
-
-// CONTROL SESION
-auth.onAuthStateChanged(user=>{
-const loginDiv = document.getElementById("login");
-const appDiv = document.getElementById("app");
-
-if(user){
-loginDiv.style.display="none";
-appDiv.style.display="block";
-cargarDatos();
-}else{
-loginDiv.style.display="block";
-appDiv.style.display="none";
-}
-});
-
-// GUARDAR / EDITAR
-function guardar(){
-
-if(!nombre.value || !telefono.value || !direccion.value || !fecha.value){
-alert("Completar todo");
-return;
-}
-
-let data = {
-nombre: nombre.value,
-telefono: telefono.value,
-direccion: direccion.value,
-fecha: fecha.value,
-estado: estado.value,
-usuario: auth.currentUser.email,
-fechaCarga: new Date()
+/* ══════════════════════════════════════════════
+   ESTADO DE LA APP
+══════════════════════════════════════════════ */
+const State = {
+  editId:  null,
+  estado:  "Reparado",
+  filtro:  "",
+  todos:   [],
+  chart:   null,
 };
 
-if(editId){
-db.collection("clientes").doc(editId).update(data);
-editId=null;
-}else{
-db.collection("clientes").add(data);
-}
+/* ══════════════════════════════════════════════
+   AUTENTICACIÓN
+══════════════════════════════════════════════ */
+const Auth = {
+  login() {
+    const email = document.getElementById("login-email").value.trim();
+    const pass  = document.getElementById("login-pass").value;
+    auth.signInWithEmailAndPassword(email, pass)
+      .catch(e => {
+        document.getElementById("login-error").textContent = "Email o contraseña incorrectos.";
+      });
+  },
 
-limpiar();
-}
+  logout() {
+    auth.signOut();
+  }
+};
 
-function limpiar(){
-nombre.value="";
-telefono.value="";
-direccion.value="";
-fecha.value="";
-}
-
-// EDITAR
-function editar(id, c){
-editId=id;
-nombre.value=c.nombre;
-telefono.value=c.telefono;
-direccion.value=c.direccion;
-fecha.value=c.fecha;
-estado.value=c.estado;
-}
-
-// ELIMINAR (solo admin)
-function eliminar(id){
-if(auth.currentUser.email !== "julipatepa@gmail.com"){
-alert("Solo admin puede borrar");
-return;
-}
-db.collection("clientes").doc(id).delete();
-}
-
-// MOSTRAR
-function cargarDatos(){
-
-let filtroEstado = filtro.value;
-
-db.collection("clientes")
-.onSnapshot(snapshot => {
-
-lista.innerHTML="";
-
-snapshot.forEach(doc=>{
-let c = doc.data();
-
-if(filtroEstado && c.estado !== filtroEstado) return;
-
-lista.innerHTML += `
-<div class="card p-2 mb-2">
-
-<b>${c.nombre}</b><br>
-
-<a href="tel:${c.telefono}">📞 ${c.telefono}</a><br>
-<a href="https://wa.me/${c.telefono}" target="_blank">💬 WhatsApp</a><br>
-
-<a href="https://www.google.com/maps/search/${c.direccion}" target="_blank">📍 ${c.direccion}</a><br>
-
-📅 ${c.fecha}<br>
-👤 ${c.usuario}<br>
-
-<b>${c.estado}</b><br>
-
-<button class="btn btn-info btn-sm mt-1" onclick='editar("${doc.id}", ${JSON.stringify(c)})'>Editar</button>
-
-<button class="btn btn-danger btn-sm mt-1" onclick='eliminar("${doc.id}")'>Eliminar</button>
-
-</div>`;
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById("screen-login").classList.add("hidden");
+    document.getElementById("screen-app").classList.remove("hidden");
+    document.getElementById("header-user").textContent = user.email;
+    Clientes.escuchar();
+  } else {
+    document.getElementById("screen-login").classList.remove("hidden");
+    document.getElementById("screen-app").classList.add("hidden");
+    document.getElementById("login-error").textContent = "";
+  }
 });
 
-cargarGrafico();
-});
+/* ══════════════════════════════════════════════
+   CLIENTES (CRUD + LISTENER)
+══════════════════════════════════════════════ */
+const Clientes = {
+  _unsubscribe: null,
+
+  escuchar() {
+    if (this._unsubscribe) this._unsubscribe();
+
+    this._unsubscribe = db.collection(COLECCION)
+      .orderBy("fechaCarga", "desc")
+      .onSnapshot(snapshot => {
+        State.todos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        UI.renderLista();
+        UI.renderStats();
+        UI.renderChart();
+      });
+  },
+
+  guardar() {
+    const nombre    = document.getElementById("f-nombre").value.trim();
+    const telefono  = document.getElementById("f-telefono").value.trim();
+    const direccion = document.getElementById("f-direccion").value.trim();
+    const fecha     = document.getElementById("f-fecha").value;
+
+    if (!nombre || !telefono || !direccion || !fecha) {
+      alert("Completá todos los campos.");
+      return;
+    }
+
+    const data = {
+      nombre,
+      telefono,
+      direccion,
+      fecha,
+      estado:     State.estado,
+      usuario:    auth.currentUser.email,
+      fechaCarga: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (State.editId) {
+      db.collection(COLECCION).doc(State.editId).update(data);
+      UI.cancelarEdicion();
+    } else {
+      db.collection(COLECCION).add(data);
+      UI.limpiarForm();
+    }
+  },
+
+  editar(id) {
+    const c = State.todos.find(x => x.id === id);
+    if (!c) return;
+
+    State.editId = id;
+
+    document.getElementById("f-nombre").value    = c.nombre;
+    document.getElementById("f-telefono").value  = c.telefono;
+    document.getElementById("f-direccion").value = c.direccion;
+    document.getElementById("f-fecha").value     = c.fecha;
+
+    UI.setEstado(c.estado);
+
+    document.getElementById("form-title").textContent = "Editando cliente";
+    document.getElementById("form-card").classList.add("editing");
+    document.getElementById("btn-cancelar").classList.remove("hidden");
+
+    document.getElementById("form-card").scrollIntoView({ behavior: "smooth" });
+  },
+
+  eliminar(id) {
+    if (auth.currentUser.email !== ADMIN_EMAIL) {
+      alert("Solo el administrador puede eliminar.");
+      return;
+    }
+    if (!confirm("¿Eliminar este cliente?")) return;
+    db.collection(COLECCION).doc(id).delete();
+  }
+};
+
+/* ══════════════════════════════════════════════
+   UI
+══════════════════════════════════════════════ */
+const UI = {
+  setEstado(estado) {
+    State.estado = estado;
+    document.querySelectorAll(".estado-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.estado === estado);
+    });
+  },
+
+  setFiltro(chip) {
+    State.filtro = chip.dataset.filtro;
+    document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    this.renderLista();
+  },
+
+  cancelarEdicion() {
+    State.editId = null;
+    document.getElementById("form-title").textContent = "Nuevo cliente";
+    document.getElementById("form-card").classList.remove("editing");
+    document.getElementById("btn-cancelar").classList.add("hidden");
+    this.limpiarForm();
+  },
+
+  limpiarForm() {
+    ["f-nombre","f-telefono","f-direccion","f-fecha"].forEach(id => {
+      document.getElementById(id).value = "";
+    });
+    this.setEstado("Reparado");
+  },
+
+  renderLista() {
+    const lista = document.getElementById("lista");
+    const filtrados = State.filtro
+      ? State.todos.filter(c => c.estado === State.filtro)
+      : State.todos;
+
+    document.getElementById("lista-count").textContent =
+      `${filtrados.length} cliente${filtrados.length !== 1 ? "s" : ""}`;
+
+    if (filtrados.length === 0) {
+      lista.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📋</div>
+          No hay clientes en esta categoría.
+        </div>`;
+      return;
+    }
+
+    lista.innerHTML = filtrados.map(c => `
+      <div class="cliente-card">
+        <div class="card-top">
+          <div class="card-nombre">${c.nombre}</div>
+          <span class="estado-badge ${c.estado}">${c.estado}</span>
+        </div>
+
+        <div class="card-info">
+          <div class="card-row">
+            <span class="icon">📞</span>
+            <a href="tel:${c.telefono}">${c.telefono}</a>
+            &nbsp;·&nbsp;
+            <a href="https://wa.me/54${c.telefono}" target="_blank">WhatsApp</a>
+          </div>
+          <div class="card-row">
+            <span class="icon">📍</span>
+            <a href="https://www.google.com/maps/search/${encodeURIComponent(c.direccion)}" target="_blank">${c.direccion}</a>
+          </div>
+          <div class="card-row">
+            <span class="icon">📅</span>
+            ${c.fecha}
+            <span style="margin-left:auto" class="card-meta">👤 ${c.usuario}</span>
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <button class="btn btn-outline btn-sm" onclick="Clientes.editar('${c.id}')">✏️ Editar</button>
+          <button class="btn btn-danger btn-sm"  onclick="Clientes.eliminar('${c.id}')">🗑 Eliminar</button>
+        </div>
+      </div>
+    `).join("");
+  },
+
+  renderStats() {
+    const counts = { Reparado: 0, Visita: 0, Pendiente: 0 };
+    State.todos.forEach(c => { if (counts[c.estado] !== undefined) counts[c.estado]++; });
+    document.getElementById("stat-reparado").textContent  = counts.Reparado;
+    document.getElementById("stat-visita").textContent    = counts.Visita;
+    document.getElementById("stat-pendiente").textContent = counts.Pendiente;
+  },
+
+  renderChart() {
+    const counts = { Reparado: 0, Visita: 0, Pendiente: 0 };
+    State.todos.forEach(c => { if (counts[c.estado] !== undefined) counts[c.estado]++; });
+
+    const ctx = document.getElementById("grafico").getContext("2d");
+
+    if (State.chart) State.chart.destroy();
+
+    State.chart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: ["Reparados", "Visitas", "Pendientes"],
+        datasets: [{
+          data: [counts.Reparado, counts.Visita, counts.Pendiente],
+          backgroundColor: ["#22c55e30","#3b82f630","#f9731630"],
+          borderColor:     ["#22c55e",  "#3b82f6",  "#f97316"],
+          borderWidth: 2,
+          borderRadius: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+        },
+        scales: {
+          x: { grid: { color: "#2e2e2e" }, ticks: { color: "#888" } },
+          y: { grid: { color: "#2e2e2e" }, ticks: { color: "#888", stepSize: 1 } }
+        }
+      }
+    });
+  }
+};
+
+/* ══════════════════════════════════════════════
+   EXPORTAR EXCEL
+══════════════════════════════════════════════ */
+function exportarExcel() {
+  const datos = State.todos.map(c => ({
+    Nombre:    c.nombre,
+    Teléfono:  c.telefono,
+    Dirección: c.direccion,
+    Fecha:     c.fecha,
+    Estado:    c.estado,
+    Usuario:   c.usuario
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(datos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Clientes");
+  XLSX.writeFile(wb, `clientes_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
-
-// GRÁFICO
-function cargarGrafico(){
-
-db.collection("clientes").get().then(snapshot=>{
-
-let reparado=0, visita=0, pendiente=0;
-
-snapshot.forEach(doc=>{
-let e = doc.data().estado;
-
-if(e==="Reparado") reparado++;
-if(e==="Visita") visita++;
-if(e==="Pendiente") pendiente++;
-});
-
-new Chart(document.getElementById("grafico"), {
-type: "bar",
-data: {
-labels: ["Reparado", "Visita", "Pendiente"],
-datasets: [{
-label: "Clientes",
-data: [reparado, visita, pendiente]
-}]
-}
-});
-
-});
-}
-
-// EXPORTAR EXCEL
-function exportarExcel(){
-db.collection("clientes").get().then(snapshot=>{
-let datos = [];
-
-snapshot.forEach(doc=>{
-let c = doc.data();
-
-datos.push({
-Nombre: c.nombre,
-Telefono: c.telefono,
-Direccion: c.direccion,
-Fecha: c.fecha,
-Estado: c.estado,
-Usuario: c.usuario
-});
-});
-
-let ws = XLSX.utils.json_to_sheet(datos);
-let wb = XLSX.utils.book_new();
-
-XLSX.utils.book_append_sheet(wb, ws, "Clientes");
-XLSX.writeFile(wb, "clientes.xlsx");
-
-});
-}
-
 </script>
-
 </body>
 </html>
