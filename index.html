@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control de Clientes</title>
+
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body {
+    background-color: #f5f5f5;
+}
+#panel {
+    display: none;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container mt-5">
+
+    <!-- LOGIN -->
+    <div id="login" class="card p-4 shadow">
+        <h3 class="text-center mb-3">Ingreso</h3>
+        <input type="text" id="user" class="form-control mb-2" placeholder="Usuario">
+        <input type="password" id="pass" class="form-control mb-3" placeholder="Contraseña">
+        <button class="btn btn-primary w-100" onclick="login()">Ingresar</button>
+        <p id="error" class="text-danger mt-2 text-center"></p>
+    </div>
+
+    <!-- PANEL -->
+    <div id="panel">
+        <h2 class="mb-3">Clientes</h2>
+
+        <!-- FORM -->
+        <div class="card p-3 mb-4 shadow">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <input type="text" id="nombre" class="form-control" placeholder="Nombre">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" id="direccion" class="form-control" placeholder="Dirección">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" id="fecha" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <select id="estado" class="form-control">
+                        <option value="Reparado">Reparado</option>
+                        <option value="Visita">Solo visita</option>
+                        <option value="Pendiente">Pendiente</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-success w-100" onclick="agregar()">Agregar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLA -->
+        <table class="table table-striped table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Dirección</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody id="tabla"></tbody>
+        </table>
+
+    </div>
+</div>
+
+<script>
+// LOGIN
+function login() {
+    const user = document.getElementById("user").value;
+    const pass = document.getElementById("pass").value;
+
+    if (user === "admin" && pass === "1234") {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("panel").style.display = "block";
+    } else {
+        document.getElementById("error").innerText = "Datos incorrectos";
+    }
+}
+
+// AGREGAR CLIENTE
+function agregar() {
+    const nombre = document.getElementById("nombre").value;
+    const direccion = document.getElementById("direccion").value;
+    const fecha = document.getElementById("fecha").value;
+    const estado = document.getElementById("estado").value;
+
+    if (!nombre || !direccion || !fecha) {
+        alert("Completar todos los campos");
+        return;
+    }
+
+    let color = "";
+    if (estado === "Reparado") color = "success";
+    if (estado === "Visita") color = "warning";
+    if (estado === "Pendiente") color = "danger";
+
+    const fila = `
+        <tr>
+            <td>${nombre}</td>
+            <td>${direccion}</td>
+            <td>${fecha}</td>
+            <td class="text-${color} fw-bold">${estado}</td>
+        </tr>
+    `;
+
+    document.getElementById("tabla").innerHTML += fila;
+
+    // limpiar
+    document.getElementById("nombre").value = "";
+    document.getElementById("direccion").value = "";
+    document.getElementById("fecha").value = "";
+}
+</script>
+
+</body>
+</html>
