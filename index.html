@@ -3,96 +3,165 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Control Clientes</title>
+<title>Control de Clientes</title>
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
 <style>
-body{background:#f5f5f5;padding:20px}
-#panel{display:none}
+body { background:#f2f2f2; }
+#panel { display:none; }
 </style>
 </head>
+
 <body>
 
-<div class="container">
+<div class="container mt-5">
 
-    <div id="login" class="card p-4 shadow">
-        <h3 class="text-center">Ingreso</h3>
-        <input type="text" id="user" class="form-control mb-2" placeholder="Usuario">
-        <input type="password" id="pass" class="form-control mb-3" placeholder="Contraseña">
-        <button class="btn btn-primary w-100" onclick="login()">Ingresar</button>
-    </div>
+<!-- LOGIN -->
+<div id="login" class="card p-4 shadow">
+<h3 class="text-center">Ingreso</h3>
 
-    <div id="panel">
-        <h2 class="mb-3">Clientes</h2>
+<input id="user" class="form-control mb-2" placeholder="Usuario">
+<input id="pass" type="password" class="form-control mb-3" placeholder="Contraseña">
 
-        <div class="card p-3 mb-3 shadow">
-            <input type="text" id="nombre" class="form-control mb-2" placeholder="Cliente">
-            <input type="text" id="direccion" class="form-control mb-2" placeholder="Dirección">
-            <input type="date" id="fecha" class="form-control mb-2">
-            <select id="estado" class="form-control mb-2">
-                <option>Reparado</option>
-                <option>Solo visita</option>
-                <option>Pendiente</option>
-            </select>
-            <button class="btn btn-success" onclick="agregar()">Guardar</button>
-        </div>
+<button class="btn btn-primary w-100" onclick="login()">Entrar</button>
+<p id="error" class="text-danger text-center mt-2"></p>
+</div>
 
-        <table class="table table-bordered bg-white">
-            <thead>
-                <tr>
-                    <th>Cliente</th>
-                    <th>Dirección</th>
-                    <th>Fecha</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody id="tabla"></tbody>
-        </table>
-    </div>
+<!-- PANEL -->
+<div id="panel">
+
+<h2 class="mb-3">Clientes</h2>
+
+<div class="card p-3 mb-3 shadow">
+<div class="row g-2">
+
+<div class="col-md-3">
+<input id="nombre" class="form-control" placeholder="Nombre">
+</div>
+
+<div class="col-md-3">
+<input id="direccion" class="form-control" placeholder="Dirección">
+</div>
+
+<div class="col-md-2">
+<input id="fecha" type="date" class="form-control">
+</div>
+
+<div class="col-md-2">
+<select id="estado" class="form-control">
+<option value="Reparado">Reparado</option>
+<option value="Visita">Solo visita</option>
+<option value="Pendiente">Pendiente</option>
+</select>
+</div>
+
+<div class="col-md-2">
+<button class="btn btn-success w-100" onclick="agregar()">Agregar</button>
+</div>
+
+</div>
+</div>
+
+<table class="table table-bordered table-striped">
+<thead class="table-dark">
+<tr>
+<th>Nombre</th>
+<th>Dirección</th>
+<th>Fecha</th>
+<th>Estado</th>
+<th>Acción</th>
+</tr>
+</thead>
+<tbody id="tabla"></tbody>
+</table>
+
+</div>
+
 </div>
 
 <script>
+
+// LOGIN
 function login(){
-    if(user.value==="admin" && pass.value==="1234"){
-        login.style.display="none";
-        panel.style.display="block";
-        mostrar();
-    }
+let u = document.getElementById("user").value.trim();
+let p = document.getElementById("pass").value.trim();
+
+if(u === "admin" && p === "1234"){
+document.getElementById("login").style.display="none";
+document.getElementById("panel").style.display="block";
+mostrar();
+}else{
+document.getElementById("error").innerText="Usuario o contraseña incorrectos";
+}
 }
 
+// AGREGAR CLIENTE
 function agregar(){
-    let clientes = JSON.parse(localStorage.getItem("clientes")) || [];
 
-    clientes.push({
-        nombre:nombre.value,
-        direccion:direccion.value,
-        fecha:fecha.value,
-        estado:estado.value
-    });
+let nombre = document.getElementById("nombre").value;
+let direccion = document.getElementById("direccion").value;
+let fecha = document.getElementById("fecha").value;
+let estado = document.getElementById("estado").value;
 
-    localStorage.setItem("clientes", JSON.stringify(clientes));
-
-    nombre.value="";
-    direccion.value="";
-    fecha.value="";
-
-    mostrar();
+if(!nombre || !direccion || !fecha){
+alert("Completá todos los campos");
+return;
 }
 
+let cliente = {nombre, direccion, fecha, estado};
+
+let lista = JSON.parse(localStorage.getItem("clientes")) || [];
+lista.push(cliente);
+
+localStorage.setItem("clientes", JSON.stringify(lista));
+
+limpiar();
+mostrar();
+}
+
+// MOSTRAR DATOS
 function mostrar(){
-    let clientes = JSON.parse(localStorage.getItem("clientes")) || [];
-    tabla.innerHTML="";
 
-    clientes.forEach(c=>{
-        tabla.innerHTML += `
-            <tr>
-                <td>${c.nombre}</td>
-                <td>${c.direccion}</td>
-                <td>${c.fecha}</td>
-                <td>${c.estado}</td>
-            </tr>
-        `;
-    });
+let tabla = document.getElementById("tabla");
+tabla.innerHTML="";
+
+let lista = JSON.parse(localStorage.getItem("clientes")) || [];
+
+lista.forEach((c,i)=>{
+
+let color="secondary";
+if(c.estado=="Reparado") color="success";
+if(c.estado=="Visita") color="warning";
+if(c.estado=="Pendiente") color="danger";
+
+tabla.innerHTML+=`
+<tr>
+<td>${c.nombre}</td>
+<td>${c.direccion}</td>
+<td>${c.fecha}</td>
+<td class="text-${color} fw-bold">${c.estado}</td>
+<td><button class="btn btn-danger btn-sm" onclick="eliminar(${i})">X</button></td>
+</tr>
+`;
+});
 }
+
+// ELIMINAR
+function eliminar(i){
+let lista = JSON.parse(localStorage.getItem("clientes")) || [];
+lista.splice(i,1);
+localStorage.setItem("clientes", JSON.stringify(lista));
+mostrar();
+}
+
+// LIMPIAR FORM
+function limpiar(){
+document.getElementById("nombre").value="";
+document.getElementById("direccion").value="";
+document.getElementById("fecha").value="";
+}
+
 </script>
 
 </body>
