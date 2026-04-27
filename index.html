@@ -4,17 +4,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clientes PRO</title>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
-<!-- Bootstrap -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-body { background:#111; color:white; }
-.card { background:#1e1e1e; border:none; }
+body { background:#111;color:white; }
+.card { background:#1e1e1e;border:none; }
 </style>
 </head>
 
@@ -23,11 +21,9 @@ body { background:#111; color:white; }
 <!-- LOGIN -->
 <div id="login">
 <h3 class="text-center">Ingreso</h3>
-
 <input id="email" class="form-control mb-2" placeholder="Email">
 <input id="pass" type="password" class="form-control mb-2" placeholder="Contraseña">
-
-<button onclick="login()" class="btn btn-primary w-100 mb-2">Entrar</button>
+<button onclick="loginUser()" class="btn btn-primary w-100">Entrar</button>
 <p id="error" class="text-danger text-center"></p>
 </div>
 
@@ -37,6 +33,13 @@ body { background:#111; color:white; }
 <h3 class="text-center">Clientes</h3>
 
 <button onclick="logout()" class="btn btn-warning mb-2">Cerrar sesión</button>
+
+<select id="filtro" class="form-control mb-2" onchange="cargarDatos()">
+<option value="">Todos</option>
+<option>Reparado</option>
+<option>Visita</option>
+<option>Pendiente</option>
+</select>
 
 <input id="nombre" class="form-control mb-1" placeholder="Nombre">
 <input id="telefono" class="form-control mb-1" placeholder="Teléfono">
@@ -49,7 +52,7 @@ body { background:#111; color:white; }
 <option>Pendiente</option>
 </select>
 
-<button onclick="agregar()" class="btn btn-success w-100 mb-3">Guardar</button>
+<button onclick="guardar()" class="btn btn-success w-100 mb-3">Guardar</button>
 
 <div id="lista"></div>
 
@@ -57,12 +60,12 @@ body { background:#111; color:white; }
 
 <script>
 
-// 🔥 CONFIG
+// CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyCAPcfPI7Xem6Ua6uasDws7rfAGn-yUyAs",
   authDomain: "ticketsrowa.firebaseapp.com",
   projectId: "ticketsrowa",
-  storageBucket: "ticketsrowa.firebasestorage.app",
+  storageBucket: "ticketsrowa.appspot.com",
   messagingSenderId: "373395832563",
   appId: "1:373395832563:web:0d8cf5099d4e32296e8186"
 };
@@ -72,15 +75,12 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
+let editId = null;
+
 // LOGIN
-function login(){
+function loginUser(){
 auth.signInWithEmailAndPassword(email.value, pass.value)
-.then(() => {
-error.innerText="";
-})
-.catch(() => {
-error.innerText="Datos incorrectos";
-});
+.catch(e => error.innerText=e.message);
 }
 
 // LOGOUT
@@ -88,27 +88,30 @@ function logout(){
 auth.signOut();
 }
 
-// CONTROL DE SESIÓN
-auth.onAuthStateChanged(user => {
+// CONTROL SESION
+auth.onAuthStateChanged(user=>{
+const loginDiv = document.getElementById("login");
+const appDiv = document.getElementById("app");
+
 if(user){
-login.style.display="none";
-app.style.display="block";
+loginDiv.style.display="none";
+appDiv.style.display="block";
 cargarDatos();
 }else{
-login.style.display="block";
-app.style.display="none";
+loginDiv.style.display="block";
+appDiv.style.display="none";
 }
 });
 
-// AGREGAR CLIENTE
-function agregar(){
+// GUARDAR / EDITAR
+function guardar(){
 
 if(!nombre.value || !telefono.value || !direccion.value || !fecha.value){
 alert("Completar todo");
 return;
 }
 
-db.collection("clientes").add({
+let data = {
 nombre: nombre.value,
 telefono: telefono.value,
 direccion: direccion.value,
@@ -116,29 +119,58 @@ fecha: fecha.value,
 estado: estado.value,
 usuario: auth.currentUser.email,
 fechaCarga: new Date()
-});
+};
 
+if(editId){
+db.collection("clientes").doc(editId).update(data);
+editId=null;
+}else{
+db.collection("clientes").add(data);
+}
+
+limpiar();
+}
+
+function limpiar(){
 nombre.value="";
 telefono.value="";
 direccion.value="";
 fecha.value="";
 }
 
-// ELIMINAR
+// EDITAR
+function editar(id, c){
+editId=id;
+nombre.value=c.nombre;
+telefono.value=c.telefono;
+direccion.value=c.direccion;
+fecha.value=c.fecha;
+estado.value=c.estado;
+}
+
+// ELIMINAR (solo admin)
 function eliminar(id){
+if(auth.currentUser.email !== "julipatepa@gmail.com"){
+alert("Solo admin puede borrar");
+return;
+}
 db.collection("clientes").doc(id).delete();
 }
 
-// MOSTRAR DATOS
+// MOSTRAR
 function cargarDatos(){
+
+let filtroEstado = filtro.value;
 
 db.collection("clientes").orderBy("fechaCarga","desc")
 .onSnapshot(snapshot => {
 
 lista.innerHTML="";
 
-snapshot.forEach(doc => {
+snapshot.forEach(doc=>{
 let c = doc.data();
+
+if(filtroEstado && c.estado !== filtroEstado) return;
 
 lista.innerHTML += `
 <div class="card p-2 mb-2">
@@ -146,17 +178,18 @@ lista.innerHTML += `
 <b>${c.nombre}</b><br>
 
 <a href="tel:${c.telefono}">📞 ${c.telefono}</a><br>
-
 <a href="https://wa.me/${c.telefono}" target="_blank">💬 WhatsApp</a><br>
 
-📍 ${c.direccion}<br>
-📅 ${c.fecha}<br>
+<a href="https://www.google.com/maps/search/${c.direccion}" target="_blank">📍 ${c.direccion}</a><br>
 
+📅 ${c.fecha}<br>
 👤 ${c.usuario}<br>
 
-<span>${c.estado}</span><br>
+<b>${c.estado}</b><br>
 
-<button class="btn btn-danger btn-sm mt-1" onclick="eliminar('${doc.id}')">Eliminar</button>
+<button class="btn btn-info btn-sm mt-1" onclick='editar("${doc.id}", ${JSON.stringify(c)})'>Editar</button>
+
+<button class="btn btn-danger btn-sm mt-1" onclick='eliminar("${doc.id}")'>Eliminar</button>
 
 </div>`;
 });
