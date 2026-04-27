@@ -2,22 +2,41 @@
 <html lang="es">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Clientes</title>
+<title>Clientes PRO</title>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
+<!-- Bootstrap -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-body {background:#111;color:white;}
-.card {background:#1e1e1e;border:none;}
+body { background:#111; color:white; }
+.card { background:#1e1e1e; border:none; }
 </style>
 </head>
 
 <body class="p-2">
 
+<!-- LOGIN -->
+<div id="login">
+<h3 class="text-center">Ingreso</h3>
+
+<input id="email" class="form-control mb-2" placeholder="Email">
+<input id="pass" type="password" class="form-control mb-2" placeholder="Contraseña">
+
+<button onclick="login()" class="btn btn-primary w-100 mb-2">Entrar</button>
+<p id="error" class="text-danger text-center"></p>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+
 <h3 class="text-center">Clientes</h3>
+
+<button onclick="logout()" class="btn btn-warning mb-2">Cerrar sesión</button>
 
 <input id="nombre" class="form-control mb-1" placeholder="Nombre">
 <input id="telefono" class="form-control mb-1" placeholder="Teléfono">
@@ -34,26 +53,58 @@ body {background:#111;color:white;}
 
 <div id="lista"></div>
 
+</div>
+
 <script>
 
-// 🔥 CONFIG FIREBASE
+// 🔥 CONFIG
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
+  apiKey: "AIzaSyCAPcfPI7Xem6Ua6uasDws7rfAGn-yUyAs",
   authDomain: "ticketsrowa.firebaseapp.com",
   projectId: "ticketsrowa",
-  storageBucket: "ticketsrowa.appspot.com",
+  storageBucket: "ticketsrowa.firebasestorage.app",
   messagingSenderId: "373395832563",
-  appId: "TU_APP_ID"
+  appId: "1:373395832563:web:0d8cf5099d4e32296e8186"
 };
 
 firebase.initializeApp(firebaseConfig);
+
 const db = firebase.firestore();
+const auth = firebase.auth();
+
+// LOGIN
+function login(){
+auth.signInWithEmailAndPassword(email.value, pass.value)
+.then(() => {
+error.innerText="";
+})
+.catch(() => {
+error.innerText="Datos incorrectos";
+});
+}
+
+// LOGOUT
+function logout(){
+auth.signOut();
+}
+
+// CONTROL DE SESIÓN
+auth.onAuthStateChanged(user => {
+if(user){
+login.style.display="none";
+app.style.display="block";
+cargarDatos();
+}else{
+login.style.display="block";
+app.style.display="none";
+}
+});
 
 // AGREGAR CLIENTE
 function agregar(){
 
 if(!nombre.value || !telefono.value || !direccion.value || !fecha.value){
-alert("Completar todos los campos");
+alert("Completar todo");
 return;
 }
 
@@ -63,32 +114,35 @@ telefono: telefono.value,
 direccion: direccion.value,
 fecha: fecha.value,
 estado: estado.value,
+usuario: auth.currentUser.email,
 fechaCarga: new Date()
 });
 
-// limpiar
 nombre.value="";
 telefono.value="";
 direccion.value="";
 fecha.value="";
 }
 
-// ELIMINAR CLIENTE
+// ELIMINAR
 function eliminar(id){
 db.collection("clientes").doc(id).delete();
 }
 
-// MOSTRAR CLIENTES
+// MOSTRAR DATOS
+function cargarDatos(){
+
 db.collection("clientes").orderBy("fechaCarga","desc")
 .onSnapshot(snapshot => {
 
-lista.innerHTML = "";
+lista.innerHTML="";
 
 snapshot.forEach(doc => {
 let c = doc.data();
 
 lista.innerHTML += `
 <div class="card p-2 mb-2">
+
 <b>${c.nombre}</b><br>
 
 <a href="tel:${c.telefono}">📞 ${c.telefono}</a><br>
@@ -97,12 +151,17 @@ lista.innerHTML += `
 
 📍 ${c.direccion}<br>
 📅 ${c.fecha}<br>
+
+👤 ${c.usuario}<br>
+
 <span>${c.estado}</span><br>
 
 <button class="btn btn-danger btn-sm mt-1" onclick="eliminar('${doc.id}')">Eliminar</button>
+
 </div>`;
 });
 });
+}
 
 </script>
 
