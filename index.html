@@ -1,166 +1,108 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Control de Clientes</title>
+<title>Clientes</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-body { background:#f2f2f2; }
-#panel { display:none; }
+body {background:#111;color:white;}
+.card {background:#1e1e1e;border:none;}
 </style>
 </head>
 
-<body>
+<body class="p-2">
 
-<div class="container mt-5">
+<h3 class="text-center">Clientes</h3>
 
-<!-- LOGIN -->
-<div id="login" class="card p-4 shadow">
-<h3 class="text-center">Ingreso</h3>
+<input id="nombre" class="form-control mb-1" placeholder="Nombre">
+<input id="telefono" class="form-control mb-1" placeholder="Teléfono">
+<input id="direccion" class="form-control mb-1" placeholder="Dirección">
+<input id="fecha" type="date" class="form-control mb-1">
 
-<input id="user" class="form-control mb-2" placeholder="Usuario">
-<input id="pass" type="password" class="form-control mb-3" placeholder="Contraseña">
-
-<button class="btn btn-primary w-100" onclick="login()">Entrar</button>
-<p id="error" class="text-danger text-center mt-2"></p>
-</div>
-
-<!-- PANEL -->
-<div id="panel">
-
-<h2 class="mb-3">Clientes</h2>
-
-<div class="card p-3 mb-3 shadow">
-<div class="row g-2">
-
-<div class="col-md-3">
-<input id="nombre" class="form-control" placeholder="Nombre">
-</div>
-
-<div class="col-md-3">
-<input id="direccion" class="form-control" placeholder="Dirección">
-</div>
-
-<div class="col-md-2">
-<input id="fecha" type="date" class="form-control">
-</div>
-
-<div class="col-md-2">
-<select id="estado" class="form-control">
-<option value="Reparado">Reparado</option>
-<option value="Visita">Solo visita</option>
-<option value="Pendiente">Pendiente</option>
+<select id="estado" class="form-control mb-2">
+<option>Reparado</option>
+<option>Visita</option>
+<option>Pendiente</option>
 </select>
-</div>
 
-<div class="col-md-2">
-<button class="btn btn-success w-100" onclick="agregar()">Agregar</button>
-</div>
+<button onclick="agregar()" class="btn btn-success w-100 mb-3">Guardar</button>
 
-</div>
-</div>
-
-<table class="table table-bordered table-striped">
-<thead class="table-dark">
-<tr>
-<th>Nombre</th>
-<th>Dirección</th>
-<th>Fecha</th>
-<th>Estado</th>
-<th>Acción</th>
-</tr>
-</thead>
-<tbody id="tabla"></tbody>
-</table>
-
-</div>
-
-</div>
+<div id="lista"></div>
 
 <script>
 
-// LOGIN
-function login(){
-let u = document.getElementById("user").value.trim();
-let p = document.getElementById("pass").value.trim();
+// 🔥 CONFIG FIREBASE
+const firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "ticketsrowa.firebaseapp.com",
+  projectId: "ticketsrowa",
+  storageBucket: "ticketsrowa.appspot.com",
+  messagingSenderId: "373395832563",
+  appId: "TU_APP_ID"
+};
 
-if(u === "admin" && p === "1234"){
-document.getElementById("login").style.display="none";
-document.getElementById("panel").style.display="block";
-mostrar();
-}else{
-document.getElementById("error").innerText="Usuario o contraseña incorrectos";
-}
-}
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
 // AGREGAR CLIENTE
 function agregar(){
 
-let nombre = document.getElementById("nombre").value;
-let direccion = document.getElementById("direccion").value;
-let fecha = document.getElementById("fecha").value;
-let estado = document.getElementById("estado").value;
-
-if(!nombre || !direccion || !fecha){
-alert("Completá todos los campos");
+if(!nombre.value || !telefono.value || !direccion.value || !fecha.value){
+alert("Completar todos los campos");
 return;
 }
 
-let cliente = {nombre, direccion, fecha, estado};
-
-let lista = JSON.parse(localStorage.getItem("clientes")) || [];
-lista.push(cliente);
-
-localStorage.setItem("clientes", JSON.stringify(lista));
-
-limpiar();
-mostrar();
-}
-
-// MOSTRAR DATOS
-function mostrar(){
-
-let tabla = document.getElementById("tabla");
-tabla.innerHTML="";
-
-let lista = JSON.parse(localStorage.getItem("clientes")) || [];
-
-lista.forEach((c,i)=>{
-
-let color="secondary";
-if(c.estado=="Reparado") color="success";
-if(c.estado=="Visita") color="warning";
-if(c.estado=="Pendiente") color="danger";
-
-tabla.innerHTML+=`
-<tr>
-<td>${c.nombre}</td>
-<td>${c.direccion}</td>
-<td>${c.fecha}</td>
-<td class="text-${color} fw-bold">${c.estado}</td>
-<td><button class="btn btn-danger btn-sm" onclick="eliminar(${i})">X</button></td>
-</tr>
-`;
+db.collection("clientes").add({
+nombre: nombre.value,
+telefono: telefono.value,
+direccion: direccion.value,
+fecha: fecha.value,
+estado: estado.value,
+fechaCarga: new Date()
 });
+
+// limpiar
+nombre.value="";
+telefono.value="";
+direccion.value="";
+fecha.value="";
 }
 
-// ELIMINAR
-function eliminar(i){
-let lista = JSON.parse(localStorage.getItem("clientes")) || [];
-lista.splice(i,1);
-localStorage.setItem("clientes", JSON.stringify(lista));
-mostrar();
+// ELIMINAR CLIENTE
+function eliminar(id){
+db.collection("clientes").doc(id).delete();
 }
 
-// LIMPIAR FORM
-function limpiar(){
-document.getElementById("nombre").value="";
-document.getElementById("direccion").value="";
-document.getElementById("fecha").value="";
-}
+// MOSTRAR CLIENTES
+db.collection("clientes").orderBy("fechaCarga","desc")
+.onSnapshot(snapshot => {
+
+lista.innerHTML = "";
+
+snapshot.forEach(doc => {
+let c = doc.data();
+
+lista.innerHTML += `
+<div class="card p-2 mb-2">
+<b>${c.nombre}</b><br>
+
+<a href="tel:${c.telefono}">📞 ${c.telefono}</a><br>
+
+<a href="https://wa.me/${c.telefono}" target="_blank">💬 WhatsApp</a><br>
+
+📍 ${c.direccion}<br>
+📅 ${c.fecha}<br>
+<span>${c.estado}</span><br>
+
+<button class="btn btn-danger btn-sm mt-1" onclick="eliminar('${doc.id}')">Eliminar</button>
+</div>`;
+});
+});
 
 </script>
 
