@@ -12,6 +12,9 @@
 <!-- Excel -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
+<!-- Gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <!-- Bootstrap -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -58,16 +61,14 @@ input::placeholder { color:#aaa !important; }
 📊 Descargar Excel
 </button>
 
-<button onclick="exportarXML()" class="btn btn-secondary w-100 mb-2">
-📄 Descargar XML
-</button>
-
 <select id="filtro" class="form-control mb-2" onchange="cargarDatos()">
 <option value="">Todos</option>
 <option>Reparado</option>
 <option>Visita</option>
 <option>Pendiente</option>
 </select>
+
+<canvas id="grafico" style="margin-bottom:20px;"></canvas>
 
 <input id="nombre" class="form-control mb-1" placeholder="Nombre">
 <input id="telefono" class="form-control mb-1" placeholder="Teléfono">
@@ -223,6 +224,37 @@ lista.innerHTML += `
 
 </div>`;
 });
+
+cargarGrafico();
+});
+}
+
+// GRÁFICO
+function cargarGrafico(){
+
+db.collection("clientes").get().then(snapshot=>{
+
+let reparado=0, visita=0, pendiente=0;
+
+snapshot.forEach(doc=>{
+let e = doc.data().estado;
+
+if(e==="Reparado") reparado++;
+if(e==="Visita") visita++;
+if(e==="Pendiente") pendiente++;
+});
+
+new Chart(document.getElementById("grafico"), {
+type: "bar",
+data: {
+labels: ["Reparado", "Visita", "Pendiente"],
+datasets: [{
+label: "Clientes",
+data: [reparado, visita, pendiente]
+}]
+}
+});
+
 });
 }
 
@@ -249,38 +281,6 @@ let wb = XLSX.utils.book_new();
 
 XLSX.utils.book_append_sheet(wb, ws, "Clientes");
 XLSX.writeFile(wb, "clientes.xlsx");
-
-});
-}
-
-// EXPORTAR XML
-function exportarXML(){
-db.collection("clientes").get().then(snapshot=>{
-
-let xml = `<clientes>`;
-
-snapshot.forEach(doc=>{
-let c = doc.data();
-
-xml += `
-<cliente>
-<nombre>${c.nombre}</nombre>
-<telefono>${c.telefono}</telefono>
-<direccion>${c.direccion}</direccion>
-<fecha>${c.fecha}</fecha>
-<estado>${c.estado}</estado>
-<usuario>${c.usuario}</usuario>
-</cliente>`;
-});
-
-xml += `</clientes>`;
-
-let blob = new Blob([xml], {type: "text/xml"});
-let a = document.createElement("a");
-
-a.href = URL.createObjectURL(blob);
-a.download = "clientes.xml";
-a.click();
 
 });
 }
