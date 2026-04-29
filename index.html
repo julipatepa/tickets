@@ -400,12 +400,13 @@ body {
 <!-- ══ LOGIN ══════════════════════════════════════ -->
 <div id="screen-login">
   <p class="login-logo">Rowa Bombas</p>
-  <h1 class="login-title">Ingresá a tu cuenta</h1>
+  <h1 class="login-title" id="login-title">Ingresá a tu cuenta</h1>
 
   <div class="login-form">
     <input id="login-email" class="input" type="email" placeholder="Email" autocomplete="email">
     <input id="login-pass"  class="input" type="password" placeholder="Contraseña" autocomplete="current-password">
-    <button class="btn btn-primary" onclick="Auth.login()">Entrar</button>
+    <button class="btn btn-primary" id="btn-login-action" onclick="Auth.login()">Entrar</button>
+    <button class="btn btn-outline" id="btn-toggle-mode" onclick="Auth.toggleMode()">¿No tenés cuenta? Registrate</button>
     <p id="login-error"></p>
   </div>
 </div>
@@ -461,8 +462,8 @@ body {
       <!-- Estado selector -->
       <div class="estado-selector">
         <button class="estado-btn active" data-estado="Reparado" onclick="UI.setEstado('Reparado')">✅ Reparado</button>
-        <button class="estado-btn"       data-estado="Visita"    onclick="UI.setEstado('Visita')">👁 Visita</button>
-        <button class="estado-btn"       data-estado="Pendiente" onclick="UI.setEstado('Pendiente')">⏳ Pendiente</button>
+        <button class="estado-btn"        data-estado="Visita"   onclick="UI.setEstado('Visita')">👁 Visita</button>
+        <button class="estado-btn"        data-estado="Pendiente" onclick="UI.setEstado('Pendiente')">⏳ Pendiente</button>
       </div>
 
       <div class="form-actions">
@@ -474,8 +475,8 @@ body {
     <!-- Filtros -->
     <div class="filter-bar">
       <button class="filter-chip active" data-filtro="" onclick="UI.setFiltro(this)">Todos</button>
-      <button class="filter-chip" data-filtro="Reparado" onclick="UI.setFiltro(this)">✅ Reparados</button>
-      <button class="filter-chip" data-filtro="Visita"   onclick="UI.setFiltro(this)">👁 Visitas</button>
+      <button class="filter-chip" data-filtro="Reparado"  onclick="UI.setFiltro(this)">✅ Reparados</button>
+      <button class="filter-chip" data-filtro="Visita"    onclick="UI.setFiltro(this)">👁 Visitas</button>
       <button class="filter-chip" data-filtro="Pendiente" onclick="UI.setFiltro(this)">⏳ Pendientes</button>
     </div>
 
@@ -499,9 +500,8 @@ const FIREBASE_CONFIG = {
   appId:             "1:373395832563:web:0d8cf5099d4e32296e8186"
 };
 
-const ADMIN_EMAIL  = "julipatepa@gmail.com";
-const COLECCION    = "clientes";
-const ESTADOS      = ["Reparado", "Visita", "Pendiente"];
+const ADMIN_EMAIL = "julipatepa@gmail.com";
+const COLECCION   = "clientes";
 
 /* ══════════════════════════════════════════════
    FIREBASE INIT
@@ -515,23 +515,72 @@ const auth = firebase.auth();
    ESTADO DE LA APP
 ══════════════════════════════════════════════ */
 const State = {
-  editId:  null,
-  estado:  "Reparado",
-  filtro:  "",
-  todos:   [],
-  chart:   null,
+  editId: null,
+  estado: "Reparado",
+  filtro: "",
+  todos:  [],
+  chart:  null,
 };
 
 /* ══════════════════════════════════════════════
    AUTENTICACIÓN
 ══════════════════════════════════════════════ */
 const Auth = {
+  mode: "login",
+
+  toggleMode() {
+    this.mode = this.mode === "login" ? "register" : "login";
+    const esRegistro = this.mode === "register";
+
+    document.getElementById("login-title").textContent =
+      esRegistro ? "Crear cuenta" : "Ingresá a tu cuenta";
+
+    document.getElementById("btn-login-action").textContent =
+      esRegistro ? "Crear cuenta" : "Entrar";
+
+    document.getElementById("btn-login-action").onclick =
+      esRegistro ? () => Auth.register() : () => Auth.login();
+
+    document.getElementById("btn-toggle-mode").textContent =
+      esRegistro ? "¿Ya tenés cuenta? Iniciá sesión" : "¿No tenés cuenta? Registrate";
+
+    document.getElementById("login-error").textContent = "";
+  },
+
   login() {
     const email = document.getElementById("login-email").value.trim();
     const pass  = document.getElementById("login-pass").value;
+    if (!email || !pass) {
+      document.getElementById("login-error").textContent = "Completá email y contraseña.";
+      return;
+    }
     auth.signInWithEmailAndPassword(email, pass)
-      .catch(e => {
+      .catch(() => {
         document.getElementById("login-error").textContent = "Email o contraseña incorrectos.";
+      });
+  },
+
+  register() {
+    const email = document.getElementById("login-email").value.trim();
+    const pass  = document.getElementById("login-pass").value;
+    if (!email || !pass) {
+      document.getElementById("login-error").textContent = "Completá email y contraseña.";
+      return;
+    }
+    if (pass.length < 6) {
+      document.getElementById("login-error").textContent = "La contraseña debe tener al menos 6 caracteres.";
+      return;
+    }
+    auth.createUserWithEmailAndPassword(email, pass)
+      .then(() => {
+        document.getElementById("login-error").textContent = "";
+      })
+      .catch(e => {
+        if (e.code === "auth/email-already-in-use") {
+          document.getElementById("login-error").textContent = "Ese email ya está registrado.";
+        } else {
+          document.getElementById("login-error").textContent = "Error al crear la cuenta.";
+        }
       });
   },
 
@@ -550,6 +599,10 @@ auth.onAuthStateChanged(user => {
     document.getElementById("screen-login").classList.remove("hidden");
     document.getElementById("screen-app").classList.add("hidden");
     document.getElementById("login-error").textContent = "";
+    if (Clientes._unsubscribe) {
+      Clientes._unsubscribe();
+      Clientes._unsubscribe = null;
+    }
   }
 });
 
@@ -561,14 +614,19 @@ const Clientes = {
 
   escuchar() {
     if (this._unsubscribe) this._unsubscribe();
+    const email = auth.currentUser.email;
 
     this._unsubscribe = db.collection(COLECCION)
+      .where("usuario", "==", email)
       .orderBy("fechaCarga", "desc")
       .onSnapshot(snapshot => {
         State.todos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         UI.renderLista();
         UI.renderStats();
         UI.renderChart();
+      }, err => {
+        // Si falta el índice compuesto, Firebase muestra el link en consola
+        console.error("Error Firestore:", err.message);
       });
   },
 
@@ -738,20 +796,18 @@ const UI = {
         labels: ["Reparados", "Visitas", "Pendientes"],
         datasets: [{
           data: [counts.Reparado, counts.Visita, counts.Pendiente],
-          backgroundColor: ["#22c55e30","#3b82f630","#f9731630"],
-          borderColor:     ["#22c55e",  "#3b82f6",  "#f97316"],
+          backgroundColor: ["#22c55e40", "#3b82f640", "#f9731640"],
+          borderColor:     ["#22c55e",   "#3b82f6",   "#f97316"],
           borderWidth: 2,
           borderRadius: 8,
         }]
       },
       options: {
         responsive: true,
-        plugins: {
-          legend: { display: false },
-        },
+        plugins: { legend: { display: false } },
         scales: {
           x: { grid: { color: "#2e2e2e" }, ticks: { color: "#888" } },
-          y: { grid: { color: "#2e2e2e" }, ticks: { color: "#888", stepSize: 1 } }
+          y: { grid: { color: "#2e2e2e" }, ticks: { color: "#888", stepSize: 1 }, beginAtZero: true }
         }
       }
     });
@@ -759,22 +815,24 @@ const UI = {
 };
 
 /* ══════════════════════════════════════════════
-   EXPORTAR EXCEL
+   EXPORT EXCEL
 ══════════════════════════════════════════════ */
 function exportarExcel() {
-  const datos = State.todos.map(c => ({
+  if (!State.todos.length) { alert("No hay clientes para exportar."); return; }
+
+  const filas = State.todos.map(c => ({
     Nombre:    c.nombre,
     Teléfono:  c.telefono,
     Dirección: c.direccion,
     Fecha:     c.fecha,
     Estado:    c.estado,
-    Usuario:   c.usuario
+    Usuario:   c.usuario,
   }));
 
-  const ws = XLSX.utils.json_to_sheet(datos);
+  const ws = XLSX.utils.json_to_sheet(filas);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Clientes");
-  XLSX.writeFile(wb, `clientes_${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb, "clientes-rowa.xlsx");
 }
 </script>
 </body>
