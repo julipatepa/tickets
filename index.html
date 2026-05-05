@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -376,9 +377,13 @@ const Clientes = {
     const email = auth.currentUser.email;
     this._unsubscribe = db.collection(COLECCION)
       .where("usuario", "==", email)
-      .orderBy("fechaCarga", "desc")
       .onSnapshot(snapshot => {
         State.todos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        State.todos.sort((a, b) => {
+          const ta = a.fechaCarga?.seconds || 0;
+          const tb = b.fechaCarga?.seconds || 0;
+          return tb - ta;
+        });
         UI.renderLista();
         UI.renderStats();
         UI.renderChart();
