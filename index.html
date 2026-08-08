@@ -341,25 +341,24 @@ body {
   margin-top: 2px;
 }
 
-/* ── EJERCICIOS (LISTA DINÁMICA) ──────────────── */
-.ejercicios-block {
+/* ── RUTINA POR DÍA (BLOQUES DINÁMICOS) ───────── */
+.dia-rutina-block {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-top: 4px;
-  border-top: 1px solid var(--border);
-  margin-top: 4px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
 }
 
-.ejercicios-block-label {
-  font-size: 12px;
+.dia-rutina-header {
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--muted);
+  color: var(--accent);
 }
 
-#ejercicios-list {
+.ejercicios-list-day {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -397,6 +396,19 @@ body {
   background: transparent;
   border: 1.5px dashed var(--border);
   color: var(--accent);
+}
+
+#dias-rutina-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dias-rutina-empty {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  padding: 10px;
 }
 
 /* ── FILTROS ──────────────────────────────────── */
@@ -658,7 +670,7 @@ body {
       <input id="f-objetivo" class="input" placeholder="Objetivo (ej: Progresar a front lever)">
 
       <!-- Días de entreno -->
-      <div class="field-label">Días de entreno</div>
+      <div class="field-label">Días de entreno (tocá un día para cargarle ejercicios)</div>
       <div class="dias-selector" id="dias-selector">
         <button class="dia-btn" data-dia="Lun" onclick="UI.toggleDia('Lun', this)">L</button>
         <button class="dia-btn" data-dia="Mar" onclick="UI.toggleDia('Mar', this)">M</button>
@@ -671,11 +683,10 @@ body {
 
       <textarea id="f-notas" class="textarea" placeholder="Notas (lesiones, observaciones, progresiones a probar...)"></textarea>
 
-      <!-- Ejercicios dinámicos -->
-      <div class="ejercicios-block">
-        <div class="ejercicios-block-label">Ejercicios</div>
-        <div id="ejercicios-list"></div>
-        <button type="button" class="btn btn-add-ejercicio" id="btn-add-ejercicio" onclick="UI.agregarEjercicioRow()">➕ Agregar ejercicio</button>
+      <!-- Rutina por día (bloques dinámicos) -->
+      <div class="field-label">Rutina por día</div>
+      <div id="dias-rutina-container">
+        <div class="dias-rutina-empty" id="dias-rutina-empty">Elegí un día arriba para cargarle ejercicios</div>
       </div>
 
       <div class="form-actions">
@@ -714,6 +725,7 @@ const FIREBASE_CONFIG = {
 
 const ADMIN_EMAIL = "julipatepa@gmail.com";
 const COLECCION   = "rutinasAlumnos";
+const DIAS_ORDEN  = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 /* ══════════════════════════════════════════════
    FIREBASE INIT
@@ -730,7 +742,6 @@ const State = {
   editId: null,
   estado: "Activa",
   nivel:  "Principiante",
-  dias:   [],
   filtro: "",
   todos:  [],
   chart:  null,
@@ -808,7 +819,7 @@ auth.onAuthStateChanged(user => {
     document.getElementById("screen-login").classList.add("hidden");
     document.getElementById("screen-app").classList.remove("hidden");
     document.getElementById("header-user").textContent = user.email;
-    UI.limpiarEjerciciosList();
+    UI.limpiarRutinaForm();
     Rutinas.escuchar();
   } else {
     document.getElementById("screen-login").classList.remove("hidden");
@@ -850,14 +861,14 @@ const Rutinas = {
     const fecha    = document.getElementById("f-fecha").value;
     const objetivo = document.getElementById("f-objetivo").value.trim();
     const notas    = document.getElementById("f-notas").value.trim();
-    const ejercicios = UI.leerEjerciciosForm();
+    const rutina   = UI.leerRutinaForm();
 
     if (!nombre || !fecha) {
       alert("Completá el nombre del alumno y la fecha.");
       return;
     }
-    if (ejercicios.length === 0) {
-      alert("Agregá al menos un ejercicio.");
+    if (rutina.length === 0) {
+      alert("Elegí al menos un día y cargale al menos un ejercicio.");
       return;
     }
 
@@ -866,10 +877,9 @@ const Rutinas = {
       fecha,
       objetivo,
       notas,
-      ejercicios,
+      rutina,
       estado:     State.estado,
       nivel:      State.nivel,
-      dias:       [...State.dias],
       usuario:    auth.currentUser.email,
       fechaCarga: firebase.firestore.FieldValue.serverTimestamp(),
     };
@@ -896,8 +906,7 @@ const Rutinas = {
 
     UI.setEstado(c.estado);
     UI.setNivel(c.nivel || "Principiante");
-    UI.setDias(c.dias || []);
-    UI.limpiarEjerciciosList(c.ejercicios || []);
+    UI.cargarRutina(c.rutina || []);
 
     document.getElementById("form-title").textContent = "Editando rutina";
     document.getElementById("form-card").classList.add("editing");
@@ -942,21 +951,55 @@ const UI = {
   },
 
   toggleDia(dia, btn) {
-    const idx = State.dias.indexOf(dia);
-    if (idx === -1) {
-      State.dias.push(dia);
-      btn.classList.add("active");
-    } else {
-      State.dias.splice(idx, 1);
+    const existente = document.getElementById(`bloque-dia-${dia}`);
+    if (existente) {
+      existente.remove();
       btn.classList.remove("active");
+    } else {
+      btn.classList.add("active");
+      this.crearBloqueDia(dia);
+      this.agregarEjercicioRow(dia);
+    }
+    this.actualizarEmptyState();
+  },
+
+  crearBloqueDia(dia) {
+    const cont = document.getElementById("dias-rutina-container");
+    const bloque = document.createElement("div");
+    bloque.className = "dia-rutina-block";
+    bloque.id = `bloque-dia-${dia}`;
+    bloque.innerHTML = `
+      <div class="dia-rutina-header">${dia}</div>
+      <div class="ejercicios-list-day" id="ejercicios-list-${dia}"></div>
+      <button type="button" class="btn btn-add-ejercicio btn-sm" onclick="UI.agregarEjercicioRow('${dia}')">➕ Agregar ejercicio</button>
+    `;
+
+    // Insertar en el orden correcto de la semana (Lun...Dom)
+    const idxNuevo = DIAS_ORDEN.indexOf(dia);
+    const siguiente = [...cont.children].find(el =>
+      el.classList.contains("dia-rutina-block") &&
+      DIAS_ORDEN.indexOf(el.id.replace("bloque-dia-", "")) > idxNuevo
+    );
+    if (siguiente) {
+      cont.insertBefore(bloque, siguiente);
+    } else {
+      cont.appendChild(bloque);
     }
   },
 
-  setDias(dias) {
-    State.dias = [...dias];
-    document.querySelectorAll(".dia-btn").forEach(btn => {
-      btn.classList.toggle("active", dias.includes(btn.dataset.dia));
-    });
+  actualizarEmptyState() {
+    const cont = document.getElementById("dias-rutina-container");
+    const hayBloques = cont.querySelector(".dia-rutina-block") !== null;
+    const empty = document.getElementById("dias-rutina-empty");
+    if (hayBloques && empty) {
+      empty.remove();
+    } else if (!hayBloques && !document.getElementById("dias-rutina-empty")) {
+      const div = document.createElement("div");
+      div.className = "dias-rutina-empty";
+      div.id = "dias-rutina-empty";
+      div.textContent = "Elegí un día arriba para cargarle ejercicios";
+      cont.appendChild(div);
+    }
   },
 
   cancelarEdicion() {
@@ -974,13 +1017,13 @@ const UI = {
     document.getElementById("f-notas").value    = "";
     this.setEstado("Activa");
     this.setNivel("Principiante");
-    this.setDias([]);
-    this.limpiarEjerciciosList();
+    this.limpiarRutinaForm();
   },
 
-  /* ── Ejercicios dinámicos en el formulario ── */
-  agregarEjercicioRow(datos) {
-    const cont = document.getElementById("ejercicios-list");
+  /* ── Rutina por día en el formulario ── */
+  agregarEjercicioRow(dia, datos) {
+    const cont = document.getElementById(`ejercicios-list-${dia}`);
+    if (!cont) return;
     const row = document.createElement("div");
     row.className = "ejercicio-row";
     row.innerHTML = `
@@ -1002,26 +1045,38 @@ const UI = {
     btn.closest(".ejercicio-row").remove();
   },
 
-  limpiarEjerciciosList(ejerciciosExistentes) {
-    const cont = document.getElementById("ejercicios-list");
-    cont.innerHTML = "";
-    if (ejerciciosExistentes && ejerciciosExistentes.length) {
-      ejerciciosExistentes.forEach(ej => this.agregarEjercicioRow(ej));
-    } else {
-      this.agregarEjercicioRow();
-    }
+  limpiarRutinaForm() {
+    document.querySelectorAll(".dia-btn").forEach(btn => btn.classList.remove("active"));
+    document.getElementById("dias-rutina-container").innerHTML = "";
+    this.actualizarEmptyState();
   },
 
-  leerEjerciciosForm() {
-    const filas = document.querySelectorAll("#ejercicios-list .ejercicio-row");
-    const ejercicios = [];
-    filas.forEach(row => {
-      const nombre = row.querySelector(".ejercicio-nombre").value.trim();
-      const series = row.querySelector(".ejercicio-series").value.trim();
-      const reps   = row.querySelector(".ejercicio-reps").value.trim();
-      if (nombre) ejercicios.push({ nombre, series, reps });
+  cargarRutina(rutina) {
+    this.limpiarRutinaForm();
+    (rutina || []).forEach(entrada => {
+      const btn = document.querySelector(`.dia-btn[data-dia="${entrada.dia}"]`);
+      if (btn) btn.classList.add("active");
+      this.crearBloqueDia(entrada.dia);
+      (entrada.ejercicios || []).forEach(ej => this.agregarEjercicioRow(entrada.dia, ej));
     });
-    return ejercicios;
+    this.actualizarEmptyState();
+  },
+
+  leerRutinaForm() {
+    const rutina = [];
+    DIAS_ORDEN.forEach(dia => {
+      const cont = document.getElementById(`ejercicios-list-${dia}`);
+      if (!cont) return;
+      const ejercicios = [];
+      cont.querySelectorAll(".ejercicio-row").forEach(row => {
+        const nombre = row.querySelector(".ejercicio-nombre").value.trim();
+        const series = row.querySelector(".ejercicio-series").value.trim();
+        const reps   = row.querySelector(".ejercicio-reps").value.trim();
+        if (nombre) ejercicios.push({ nombre, series, reps });
+      });
+      if (ejercicios.length) rutina.push({ dia, ejercicios });
+    });
+    return rutina;
   },
 
   renderLista() {
@@ -1056,18 +1111,21 @@ const UI = {
           </div>
           <div class="card-extra">
             ${c.nivel ? `<span class="nivel-badge">${c.nivel}</span>` : ""}
-            ${(c.dias || []).map(d => `<span class="dia-badge">${d}</span>`).join("")}
+            ${(c.rutina || []).map(r => `<span class="dia-badge">${r.dia}</span>`).join("")}
           </div>
           ${c.objetivo ? `<div class="card-objetivo"><span class="label">🎯 </span>${c.objetivo}</div>` : ""}
           ${c.notas ? `<div class="card-notas">📝 ${c.notas}</div>` : ""}
-          <div class="ejercicios-resumen">
-            ${(c.ejercicios || []).map(e => `
-              <div class="ejercicio-item">
-                <span class="nombre">${e.nombre}</span>
-                <span class="detalle">${e.series ? e.series + "x" : ""}${e.reps || ""}</span>
-              </div>
-            `).join("")}
-          </div>
+          ${(c.rutina || []).map(r => `
+            <div class="ejercicios-resumen">
+              <div class="ejercicio-item"><span class="nombre" style="font-weight:700">${r.dia}</span></div>
+              ${(r.ejercicios || []).map(e => `
+                <div class="ejercicio-item">
+                  <span class="nombre">${e.nombre}</span>
+                  <span class="detalle">${e.series ? e.series + "x" : ""}${e.reps || ""}</span>
+                </div>
+              `).join("")}
+            </div>
+          `).join("")}
         </div>
 
         <div class="card-actions">
@@ -1126,19 +1184,21 @@ function exportarExcel() {
 
   const filas = [];
   State.todos.forEach(c => {
-    (c.ejercicios || []).forEach(e => {
-      filas.push({
-        Alumno:      c.nombre,
-        Fecha:       c.fecha,
-        Estado:      c.estado,
-        Nivel:       c.nivel || "",
-        Objetivo:    c.objetivo || "",
-        Días:        (c.dias || []).join(", "),
-        Ejercicio:   e.nombre,
-        Series:      e.series,
-        Reps:        e.reps,
-        Notas:       c.notas || "",
-        Usuario:     c.usuario,
+    (c.rutina || []).forEach(r => {
+      (r.ejercicios || []).forEach(e => {
+        filas.push({
+          Alumno:      c.nombre,
+          Fecha:       c.fecha,
+          Estado:      c.estado,
+          Nivel:       c.nivel || "",
+          Objetivo:    c.objetivo || "",
+          Día:         r.dia,
+          Ejercicio:   e.nombre,
+          Series:      e.series,
+          Reps:        e.reps,
+          Notas:       c.notas || "",
+          Usuario:     c.usuario,
+        });
       });
     });
   });
