@@ -853,6 +853,7 @@ const Rutinas = {
       }, err => {
         // Si falta el índice compuesto, Firebase muestra el link en consola
         console.error("Error Firestore:", err.message);
+        alert("Error al cargar rutinas: " + err.message + "\n\nRevisá la consola del navegador (F12) — si es falta de índice, ahí aparece un link para crearlo con un clic.");
       });
   },
 
@@ -885,11 +886,23 @@ const Rutinas = {
     };
 
     if (State.editId) {
-      db.collection(COLECCION).doc(State.editId).update(data);
-      UI.cancelarEdicion();
+      db.collection(COLECCION).doc(State.editId).update(data)
+        .then(() => {
+          UI.cancelarEdicion();
+        })
+        .catch(err => {
+          console.error("Error al actualizar rutina:", err);
+          alert("No se pudo guardar la rutina: " + err.message);
+        });
     } else {
-      db.collection(COLECCION).add(data);
-      UI.limpiarForm();
+      db.collection(COLECCION).add(data)
+        .then(() => {
+          UI.limpiarForm();
+        })
+        .catch(err => {
+          console.error("Error al crear rutina:", err);
+          alert("No se pudo guardar la rutina: " + err.message);
+        });
     }
   },
 
